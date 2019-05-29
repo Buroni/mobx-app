@@ -90,7 +90,7 @@ class AppEditor extends Component<{store: AppStore}> {
     return <div>
             Title: <input type={"text"} value={app.title} onChange={(e) => app.title = e.target.value}/>
             <br />
-            <input type={"checkbox"} id={"vis"} onClick={() => app.private = !app.private}/> Public
+            <input type={"checkbox"} id={"vis"} onClick={() => app.private = !app.private} checked={!app.private}/> Public
           </div>;
   }
 }
@@ -114,9 +114,25 @@ class AppViewer extends Component<{store: AppStore}> {
 }
 ```
 
-## Notes
+Now in our toy example, the react `App` component itself initiates the store and passes it via props. The store normally wouldn't be initiated in the App and passed through as props everywhere. Different stores will usually be unified into one `RootStore` which is accessed via context.
 
-The store normally wouldn't be initiated in the App and passed through as props everywhere. Different stores will usually be unified into one `RootStore` which is accessed via context.
+```javascript
+const App: React.FC = () => {
+  const store = new AppStore(appApiInstance, 0);
+  return (
+      <div className="App">
+
+        <div className="section">
+          <AppViewer store={store}/>
+        </div>
+
+        <div style={{marginTop: "5em"}}>
+          <AppEditor store={store}/>
+        </div>
+      </div>
+  );
+};
+```
 
 ## Further info
 
