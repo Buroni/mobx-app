@@ -24,7 +24,8 @@ export class App {
     @observable public title: string = "";
     @observable public headline: string = "";
     @observable public private = false;
-    @observable public id: number = Math.random() * 10;
+
+    public id: number = Math.random() * 10;
 
     @computed
     get asJson() {
