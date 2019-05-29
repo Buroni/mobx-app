@@ -7,7 +7,8 @@ This example is split up into 4 parts:
 * The actual view component `App.tsx` which contain several `observer` components, allowing the `App` to be easily viewed and manipulated.
 
 ## AppStore
-The `AppStore` contains one `observable` variable, `app`. It also contains a `transportLayer`, which is just an instance of the API class we'll be using to load and save apps to/from the back-end.
+The `AppStore` contains one `observable` variable, `app`. It also contains a `transportLayer`, which is just an instance of the API class we'll be using to load and save apps to/from the back-end. By making the app observable, we're including it in the action -> state -> reaction lifecycle which allows observers to view and manipulate the object easily.
+
 ```javascript
 export class AppStore {
     @observable public app = new App(this);
@@ -28,7 +29,7 @@ export class AppStore {
 ```
 
 ## App
-The `App` class itself contains some observable properties (title, headline, private, id). These are the properties the user will see and change, so we want them to be part of the mobx action -> state -> reaction lifecycle.
+The `App` class itself contains some observable properties (title, headline, private). These are properties the user will see and change.
 
 This class also contains one `computed` value, and one `reaction`. These two concepts are similar, in that they are automatically triggered by state changes. However the difference is that a `computed` value is generally a pure function which returns a value, whereas a `reaction` is a side effect. For example in the code below, the computed value `asJson` returns a json-serialised object, whereas the reaction `saveHandler` automatically saves changes to the API in response to state change.
 
@@ -39,7 +40,8 @@ export class App {
     @observable public title: string = "";
     @observable public headline: string = "";
     @observable public private = false;
-    @observable public id: number = Math.random() * 10;
+    
+    public id: number = Math.random() * 10;
 
     @computed
     get asJson() {
