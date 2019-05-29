@@ -1,0 +1,1 @@
+export type Lifecycle = "PUBLIC" | "PRIVATE" | "TEMPORARY";
