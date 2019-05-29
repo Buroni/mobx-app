@@ -1,44 +1,123 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Overview
 
-## Available Scripts
+This example is split up into 4 parts: 
+* The app store `AppStore`, which stores the `App` object and provides a method to change the current instance of the app.
+* The class which generates the `App` object. This contains several `observable` properties such as title, headline, private. By setting these properties to be observable, we allow them to be updated programmatically whenever an `observer` component changes one of the properties.
+* A fake `AppApi` class which stores and loads/saves app objects.
+* The actual view component `App.tsx` which contain several `observer` components, allowing the `App` to be easily viewed and manipulated.
 
-In the project directory, you can run:
+## AppStore
+The `AppStore` contains one `observable` variable, `app`. It also contains a `transportLayer`, which is just an instance of the API class we'll be using to load and save apps to/from the back-end.
+```javascript
+export class AppStore {
+    @observable public app = new App(this);
 
-### `npm start`
+    public transportLayer: any;
 
-Runs the app in the development mode.<br>
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+    constructor(transportLayer: any, id: number) {
+        this.transportLayer = transportLayer;
+        this.loadApp(id);
+    }
 
-The page will reload if you make edits.<br>
-You will also see any lint errors in the console.
+    public loadApp(id: number) {
+        this.transportLayer.getAppById(id).then((appJson: any) => {
+            this.app.updateFromJson(appJson);
+        });
+    }
+}
+```
 
-### `npm test`
+## App
+The `App` class itself contains some observable properties (title, headline, private, id). These are the properties the user will see and change, so we want them to be part of the mobx action -> state -> reaction lifecycle.
 
-Launches the test runner in the interactive watch mode.<br>
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+This class also contains one `computed` value, and one `reaction`. These two concepts are similar, in that they are automatically triggered by state changes. However the difference is that a `computed` value is generally a pure function which returns a value, whereas a `reaction` is a side effect. For example in the code below, the computed value `asJson` returns a json-serialised object, whereas the reaction `saveHandler` automatically saves changes to the API in response to state change.
 
-### `npm run build`
+This is also a good time to mention that the `App` class is responsible for (de)serialisation. When a new app is loaded using the method in `AppStore`, the app object itself deserialises the json object from the back-end using its `updateFromJson` method. Inversely, when the save reaction is triggered the `App` object data is piped through its own `asJson` value.
 
-Builds the app for production to the `build` folder.<br>
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```javascript
+export class App {
+    @observable public title: string = "";
+    @observable public headline: string = "";
+    @observable public private = false;
+    @observable public id: number = Math.random() * 10;
 
-The build is minified and the filenames include the hashes.<br>
-Your app is ready to be deployed!
+    @computed
+    get asJson() {
+        return {
+            title: this.title,
+            headline: this.headline,
+            private: this.private,
+            id: this.id
+        };
+    }
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+    private store: AppStore;
+    private saveHandler: any;
 
-### `npm run eject`
+    constructor(store: any, json: any = blankAppJson) {
+        this.store = store;
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+        this.saveHandler = reaction(
+            () => this.asJson,
+            appJson => this.store.transportLayer.saveApp(appJson)
+        );
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+        this.updateFromJson(json);
+    }
 
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+    public updateFromJson(json: any) {
+        this.title = json.title;
+        this.headline = json.headline;
+        this.private = json.private;
+        this.id = json.id;
+    }
+}
+```
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+## App.tsx
 
-## Learn More
+This is the view component which renders the `App` and allows the object to be updated by the user. 
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+The `AppEditor` component below is an `@observer` component, which means that it subscribes to the `@observable` properties in the store and is able to trigger state changes. There are two actions, `onChange` and `onClick` which trigger state changes in `AppStore`. Note that simply changing a property in `store.app` is enough to trigger this change in the app store.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```javascript
+@observer
+class AppEditor extends Component<{store: AppStore}> {
+  public render() {
+    const { app } = this.props.store;
+    return <div>
+            Title: <input type={"text"} value={app.title} onChange={(e) => app.title = e.target.value}/>
+            <br />
+            <input type={"checkbox"} id={"vis"} onClick={() => app.private = !app.private}/> Public
+          </div>;
+  }
+}
+```
+
+The `AppViewer` component simply renders the current state of the app object, re-rendering  the view when state changes occur.
+
+```javascript
+@observer
+class AppViewer extends Component<{store: AppStore}> {
+  public render() {
+    const { app } = this.props.store;
+
+    return <div>
+        <h3>{app.title} ({app.private ? "PRIVATE" : "PUBLIC"})</h3>
+        <p>
+          {app.headline}
+        </p>
+    </div>
+  }
+}
+```
+
+## Notes
+
+The store normally wouldn't be initiated in the App and passed through as props everywhere. Different stores will usually be unified into one `RootStore` which is accessed via context.
+
+## Further info
+
+This example is based on the mobxjs best practices article https://mobx.js.org/best/store.html
+
+mobx github: https://github.com/mobxjs/mobx
