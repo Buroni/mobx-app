@@ -56,7 +56,7 @@ export class App {
     private store: AppStore;
     private saveHandler: any;
 
-    constructor(store: any, json: any = blankAppJson) {
+    constructor(store: AppStore, json: any = blankAppJson) {
         this.store = store;
 
         this.saveHandler = reaction(
