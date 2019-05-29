@@ -90,7 +90,7 @@ class AppEditor extends Component<{store: AppStore}> {
     return <div>
             Title: <input type={"text"} value={app.title} onChange={(e) => app.title = e.target.value}/>
             <br />
-            <input type={"checkbox"} id={"vis"} onClick={() => app.private = !app.private}/> Public
+            <input type={"checkbox"} id={"vis"} onClick={() => app.private = !app.private} checked={!app.private}/> Public
           </div>;
   }
 }
